@@ -1,0 +1,9 @@
+[Unit]
+Description=Poweroff daily
+
+[Timer]
+OnCalendar=*-*-* 00:10:*
+Unit=poweroff.service
+
+[Install]
+WantedBy=timers.target

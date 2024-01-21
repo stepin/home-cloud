@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# attaches /dev/sda to /cloud
+
+# delete all existing partitions
+sfdisk --delete --wipe always /dev/sda
+
+# create 1 Linux partition on entire disk
+echo 'type=83' | sfdisk /dev/sda
+
+# create filesystem
+mkfs.btrfs -L CLOUD /dev/sda1
+
+# Disable copy-on-write for var to improve performance of any databases and VM images within
+# chattr +C /mnt/cloud

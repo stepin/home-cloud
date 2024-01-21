@@ -1,0 +1,63 @@
+
+module local 1.0;
+
+require {
+	type snapperd_t;
+	type container_file_t;
+	type container_t;
+	type cockpit_ws_t;
+	type avahi_t;
+	type admin_home_t;
+	type unlabeled_t;
+	type init_t;
+	type rebootmgr_t;
+	type NetworkManager_dispatcher_t;
+	type systemd_logind_t;
+	type systemd_hostnamed_t;
+	type systemd_timedated_t;
+	type system_dbusd_t;
+	type hostname_etc_t;
+	class file { execute execute_no_trans ioctl open read };
+	class dir search;
+	class unix_stream_socket connectto;
+	class dbus send_msg;
+	class sock_file write;
+}
+
+#============= NetworkManager_dispatcher_t ==============
+allow NetworkManager_dispatcher_t container_file_t:sock_file write;
+
+#============= avahi_t ==============
+allow avahi_t container_t:dbus send_msg;
+
+#============= container_t ==============
+allow container_t avahi_t:dbus send_msg;
+allow container_t system_dbusd_t:dbus send_msg;
+allow container_t system_dbusd_t:unix_stream_socket connectto;
+allow container_t hostname_etc_t:file {open read};
+
+#============= init_t ==============
+allow init_t admin_home_t:file { open read };
+allow init_t admin_home_t:file ioctl;
+allow init_t unlabeled_t:file { execute execute_no_trans };
+allow init_t container_file_t:sock_file write;
+allow init_t container_file_t:file { execute execute_no_trans };
+
+#============= snapperd_t ==============
+allow snapperd_t container_file_t:sock_file write;
+
+#============= rebootmgr_t ==============
+allow rebootmgr_t container_file_t:sock_file write;
+
+#============= systemd_hostnamed_t ==============
+allow systemd_hostnamed_t container_file_t:sock_file write;
+
+#============= systemd_logind_t ==============
+allow systemd_logind_t container_file_t:sock_file write;
+
+#============= cockpit_ws_t ==============
+allow cockpit_ws_t container_file_t:dir search;
+allow cockpit_ws_t container_file_t:sock_file write;
+
+#============= systemd_timedated_t ==============
+allow systemd_timedated_t container_file_t:sock_file write;

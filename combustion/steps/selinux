@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# fixes 2+ issues:
+# - read of poweroff.timer file by systemd
+# - exec firstrun.sh from systemd service
+# - ...
+#
+
+semodule -i files/local.pp

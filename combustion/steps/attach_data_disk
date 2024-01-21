@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# attaches /dev/sda to /cloud
+
+# backup current files
+mkdir -p /cloud
+mkdir /root/cloud
+mv /cloud/* /root/cloud/
+
+# mount new partition
+echo 'LABEL="CLOUD" /cloud btrfs defaults 0 0' >> /etc/fstab
+mount /cloud
+
+# recover current files
+mv /root/cloud/* /cloud/

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+ENABLE_SERVICES="$ENABLE_SERVICES wake_on_lan.service"
+
+cp files/wake_on_lan.service /etc/systemd/system/
+
+# combustion can be on fat filesystem without proper file permissions
+chmod 644 /etc/systemd/system/wake_on_lan.service

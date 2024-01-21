@@ -1,0 +1,11 @@
+[Unit]
+Description=First Boot Poweroff
+
+[Service]
+Type=oneshot
+ExecStart=rm /etc/systemd/system/firstboot_poweroff.service
+ExecStart=rm /etc/systemd/system/default.target.wants/firstboot_poweroff.service
+ExecStart=systemctl poweroff
+
+[Install]
+WantedBy=default.target

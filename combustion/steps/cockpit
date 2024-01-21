@@ -1,0 +1,4 @@
+#!/bin/sh
+
+INSTALL_PACKAGES="$INSTALL_PACKAGES patterns-microos-cockpit cockpit cockpit-packagekit cockpit-networkmanager cockpit-tukit cockpit-storaged"  
+ENABLE_SERVICES="$ENABLE_SERVICES cockpit.socket"

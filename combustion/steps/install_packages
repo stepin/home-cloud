@@ -1,0 +1,9 @@
+#!/bin/sh
+
+zypper --non-interactive refresh
+zypper --non-interactive dist-upgrade
+[[ -n "${INSTALL_PACKAGES}" ]] && zypper --non-interactive install $INSTALL_PACKAGES
+[[ -n "${ENABLE_SERVICES}" ]] && systemctl enable $ENABLE_SERVICES
+
+echo "${INSTALL_PACKAGES}" > /root/install_packages
+echo "${ENABLE_SERVICES}" > /root/enable_services

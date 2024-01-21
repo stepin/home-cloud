@@ -1,0 +1,17 @@
+[Unit]
+Description=Home Cloud Init
+Requires=podman.socket
+After=podman.socket
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=tar -xzf /root/apps.tar.gz -C /cloud
+ExecStart=/cloud/system/firstrun.sh
+ExecStart=rm /etc/systemd/system/home_cloud_init.service
+ExecStart=rm /etc/systemd/system/default.target.wants/home_cloud_init.service
+ExecStart=rm /root/apps.tar.gz
+
+[Install]
+WantedBy=default.target

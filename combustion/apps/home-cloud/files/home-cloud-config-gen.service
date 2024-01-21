@@ -1,0 +1,12 @@
+[Unit]
+Description="Generate config files for Home Cloud"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/cloud/home-cloud/src/generate_files.sh
+
+[Install]
+WantedBy=default.target

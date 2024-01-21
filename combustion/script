@@ -1,0 +1,77 @@
+#!/bin/sh
+# combustion: network
+
+# Redirect output to the console
+exec > >(exec tee -a /dev/tty0) 2>&1
+set -x
+
+#
+# Section 1: obligatory and specific (hostname, timezone, root's password, system update)
+#
+
+# NOTE: hostnamectl don't work on this stage
+echo cloud.lan > /etc/hostname
+
+# NOTE: datetimectl don't work on this stage
+rm -rf /etc/localtime /etc/timezone
+ln -s /usr/share/zoneinfo/Europe/Samara /etc/localtime
+echo "Europe/Samara" > /etc/timezone
+
+# Set a password for root, generate the hash with "openssl passwd -6"
+MY_ROOT_PASSWORD_HASH='$6$F2zLOFZyNunH4Rtk$nZ2dYTUTlnlIzO1dI8KFSRzorD5lks.ax1ZC4jOCsBcbgHuiClFoxBKF8xihxb3SOybsgt5/e2r/niAM7NvUO/'
+
+#
+# Section 2: custom system configuration (depends on requirements for different systems)
+#
+
+mount /var
+mount /root
+INSTALL_PACKAGES=""
+ENABLE_SERVICES=""
+
+# configure wifi (if needed)
+# this configuration is for wifi to be used after installation
+# it's also possible to configure wifi for installation itself using pretend:
+# https://github.com/openSUSE/combustion/tree/master#perform-modifications-in-the-initrd-environment
+# source steps/wifi
+
+# allow to use .local domains
+source steps/zeroconf
+
+# enable web interface to manage this machine (disks, network, packages, ...)
+source steps/cockpit
+
+# enable support for containers
+source steps/podman
+
+# create ssh key for root to be able to upload backups and for other cases
+source steps/root_ssh_key
+
+# allow access using ssh
+source steps/access_using_ssh
+
+# save electricity and so on
+source steps/poweroff_daily
+
+# enable wake on lan to boot it after poweroff
+# NOTE: nmcli don't work on this stage. how to configure nm in this case?..
+# source steps/wake_on_lan
+
+# poweroff after installation
+source steps/poweroff_after_installation
+
+# NOTE: it's disabled as it's quite critical and you need to recheck if it's really needed
+# and device name is correct. Cockpit should be used by normal users for this task.
+# source steps/format_data_disk
+# source steps/attach_data_disk
+
+# prepare home cloud apps installation
+source steps/apps
+
+# fix SELinux
+source steps/selinux_disable
+
+# Install packages and enable services
+source steps/install_packages
+
+echo "Configured with Combustion" > /etc/issue.d/combustion

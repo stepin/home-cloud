@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# fixes all issues with SELinux
+#
+
+cat >/etc/selinux/config <<EOF
+SELINUX=permissive
+SELINUXTYPE=targeted
+EOF

@@ -1,0 +1,136 @@
+#!/bin/sh
+# combustion: network
+#
+# This script is to configure MicroOS as Home Server.
+# It provides Web UI (Cockpit) for configuration after installation.
+#
+# This script can be used without changes for each server.
+#
+# It's best suited for following installation images:
+# 1. RaspberryPi: openSUSE-MicroOS.aarch64-ContainerHost-RaspberryPi.raw.xz
+# 2. PC (to run from a flash drive): openSUSE-MicroOS.x86_64-ContainerHost-SelfInstall.raw.xz
+# 3. PC (to run from a internal EMMC): openSUSE-MicroOS.x86_64-ContainerHost-SelfInstall.iso
+#
+# Put this script into flash drive (it can be FAT16) with label `COMBUSTION` into folder `combustion`.
+# Use image above and this flash drive in the same time.
+# After script will finish it's work it will poweroff computer -- then you can remove installation media(s).
+#
+# NOTES after installation:
+# 1. Login into https://myserver.local:9090 with root user and root11 default root password.
+# 2. Change root user password.
+# 3. Change hostname.
+
+
+# Redirect output to the console
+exec > >(exec tee -a /dev/tty0) 2>&1
+set -x
+
+#
+# Section 1: params
+#
+
+MY_TIME_ZONE="Europe/Samara"
+# Set a password for root, generate the hash with "openssl passwd -6"
+# Default is root11 . If you use default change it first time after login into Cockpit.
+MY_ROOT_PASSWORD_HASH='$6$F2zLOFZyNunH4Rtk$nZ2dYTUTlnlIzO1dI8KFSRzorD5lks.ax1ZC4jOCsBcbgHuiClFoxBKF8xihxb3SOybsgt5/e2r/niAM7NvUO/'
+
+
+#
+# Section 2: generic settings for all systems
+#
+
+echo '-- Step 1: generic settings'
+
+# NOTE: change it after login using Cockpit
+echo myserver.local > /etc/hostname
+
+# NOTE: datetimectl don't work on this stage
+rm -rf /etc/localtime /etc/timezone
+ln -s "/usr/share/zoneinfo/$MY_TIME_ZONE" /etc/localtime
+echo "$MY_TIME_ZONE" > /etc/timezone
+
+# Set a password for root, generate the hash with "openssl passwd -6"
+echo "root:$MY_ROOT_PASSWORD_HASH" | chpasswd -e
+
+mkdir -m775 /cloud
+chown 10000:10000 /cloud
+mount /root
+INSTALL_PACKAGES=""
+ENABLE_SERVICES=""
+
+
+echo '-- Step 2: root user settings'
+
+INSTALL_PACKAGES="$INSTALL_PACKAGES bash-completion mc tmux btop"
+ENABLE_SERVICES="$ENABLE_SERVICES sshd"
+
+mkdir -pm700 /root/.ssh/
+
+echo "$MY_ROOT_SSH_KEY" > /root/.ssh/authorized_keys
+chmod 644 /root/.ssh/authorized_keys
+
+ssh-keygen -t rsa -q -f "/root/.ssh/id_rsa" -N ""
+
+echo '-- Step 3: zeroconf (allows to use .local domains)'
+
+INSTALL_PACKAGES="$INSTALL_PACKAGES avahi avahi-autoipd nss-mdns"
+
+
+echo '-- Step 4: cockpit (enables web interface to manage this machine: disks, network, packages, ...)'
+
+INSTALL_PACKAGES="$INSTALL_PACKAGES patterns-microos-cockpit cockpit cockpit-packagekit cockpit-networkmanager cockpit-tukit cockpit-storaged"  
+ENABLE_SERVICES="$ENABLE_SERVICES cockpit.socket"
+
+
+echo '-- Step 5: podman (enables support for docker-like containers)'
+
+ENABLE_SERVICES="$ENABLE_SERVICES podman.socket podman-restart.service"
+
+touch /etc/containers/nodocker
+cat >/etc/containers/registries.conf.d/docker.conf <<EOF
+unqualified-search-registries = ['docker.io']
+EOF
+
+
+echo '-- Step 6: disable SELinux'
+
+cat >/etc/selinux/config <<EOF
+SELINUX=permissive
+SELINUXTYPE=targeted
+EOF
+
+
+echo '-- Step 7: helper script to enable wake on lan'
+
+cat >/root/wake-on-lan.sh <<\EOF
+#!/usr/bin/env bash
+#
+# Enables wake on lan configuration.
+#
+set -eEuo pipefail
+cd "$(dirname "$0")"
+set -x
+
+# next boots
+active_name=$(nmcli --fields=name --terse connection show --active | egrep -v ^lo$ | head -1)
+nmcli c modify "${active_name}" 802-3-ethernet.wake-on-lan magic
+
+# current boot
+active_device=$(nmcli --fields=device --terse connection show --active | egrep -v ^lo$ | head -1)
+ethtool -s "${active_device}" wol g
+EOF
+chmod +x /root/wake-on-lan.sh
+
+
+echo '-- Step 8: update and install packages'
+
+echo "${INSTALL_PACKAGES}" > /root/install_packages
+echo "${ENABLE_SERVICES}" > /root/enable_services
+
+zypper --non-interactive refresh
+zypper --non-interactive dist-upgrade
+[[ -n "${INSTALL_PACKAGES}" ]] && zypper --non-interactive install $INSTALL_PACKAGES
+[[ -n "${ENABLE_SERVICES}" ]] && systemctl enable $ENABLE_SERVICES
+
+
+echo '-- DONE'

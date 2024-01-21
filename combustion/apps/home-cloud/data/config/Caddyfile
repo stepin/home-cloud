@@ -1,0 +1,20 @@
+home.local {
+	tls internal
+	root * /data/home_cloud_site/
+	file_server
+}
+:443 {
+	tls internal
+	respond /health 200
+}
+:8080 {
+	respond /health 200
+}
+nextcloud.local {
+	tls internal
+	reverse_proxy home.lan.example.com:30002
+}
+nextcloud.lan.example.com {
+	tls /config/fullchain.pem /config/privkey.pem
+	reverse_proxy home.lan.example.com:30002
+}

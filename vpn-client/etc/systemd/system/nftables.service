@@ -1,0 +1,9 @@
+[Unit]
+Description=Initialises nftab rules
+
+[Service]
+Type=oneshot
+ExecStart=/etc/nftables.conf
+
+[Install]
+WantedBy=default.target

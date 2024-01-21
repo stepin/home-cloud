@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
+"""
+Copyright 2024 Igor Stepin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import logging
+import os
+import signal
+import argparse
+import subprocess
+
+def process_action(action: str):
+    logging.info("action: %s\n", action)
+    subprocess.run(['/usr/bin/systemctl', action])
+    return
+
+class Handler(BaseHTTPRequestHandler):
+    key = ''
+
+    def write_response(self, code:int, json:str):
+        self.send_response(code)
+        self.send_header('Content-type', 'application/json; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(bytes(json, "utf-8"))
+
+    def return_200(self):
+        self.write_response(200, '{"status": "success"}')
+
+    def return_401(self):
+        self.write_response(401, '{"status": "forbidden"}')
+
+    def return_404(self):
+        self.write_response(404, '{"status": "not_found"}')
+
+    def parse_action(self):
+        action = ''
+        if self.path == '/poweroff':
+            action = 'poweroff'
+        elif self.path == '/reboot':
+            action = 'reboot'
+        elif self.path == '/suspend':
+            action = 'suspend'
+        elif self.path == '/hibernate':
+            action = 'hibernate'
+        elif self.path == '/hybrid-sleep':
+            action = 'hybrid-sleep'
+        elif self.path == '/suspend-then-hibernate':
+            action = 'suspend-then-hibernate'
+        return action
+        
+    def check_key(self):
+        actual_key = self.headers.get('x-api-key', '')
+        return actual_key == self.key
+        
+    def do_POST(self):
+        logging.info("POST request,\nPath: %s\nHeaders:\n%s\n", str(self.path), str(self.headers))
+
+        action = self.parse_action()
+        if not action:
+            self.return_404()
+            return
+        
+        check_result = self.check_key()
+        if not check_result:
+            self.return_401()
+            return
+
+        process_action(action)
+        self.return_200()
+            
+def run_server(ip: str, port: str, key: str, handler_class=Handler):
+    logging.basicConfig(level=logging.INFO)
+    logging.info(f'Starting http server on {ip}:{port} with x-api-key {key}')
+    handler_class.key = key
+    server = HTTPServer((ip, port), handler_class)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        logging.info('Stopping...\n')
+        server.server_close()
+
+def exit_gracefully(signum, frame):
+    os.kill(os.getpid(), signal.SIGINT)
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+                        prog='http-poweroff',
+                        description='HTTP server in Python to poweroff, reboot, suspend, hibernate, hybrid-sleep, or suspend-then-hibernate system using systemctl command.',
+                        epilog='Text at the bottom of help')
+    parser.add_argument('-p', '--port', type=int, default=8009, help="default is 8009")
+    parser.add_argument('-b', '--bind', type=str, default="", help="provide IP address to listen on, default: all IPs of this machine")
+    parser.add_argument('-k', '--key',  type=str, default="root12", help="provide secret x-api-key to poweroff this machine, default is root12")
+    args = parser.parse_args()
+    return args
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, exit_gracefully)
+    args = parse_args()
+    run_server(ip=args.bind, port=args.port, key=args.key)

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+INSTALL_PACKAGES="$INSTALL_PACKAGES avahi avahi-autoipd nss-mdns"

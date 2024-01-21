@@ -1,0 +1,9 @@
+[Unit]
+Description="Run backup daily"
+
+[Timer]
+OnCalendar=*-*-* 14:00:*
+Unit=home-cloud-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,12 @@
+[Unit]
+Description="Allows power management from http"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/cloud/system/http-poweroff
+
+[Install]
+WantedBy=default.target

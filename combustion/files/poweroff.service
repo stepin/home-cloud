@@ -1,0 +1,6 @@
+[Unit]
+Description=Poweroff job for timer
+
+[Service]
+Type=oneshot
+ExecStart=systemctl poweroff

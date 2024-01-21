@@ -1,0 +1,12 @@
+[Unit]
+Description="CNAME for mDNS for services from Home Cloud"
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/cloud/home-cloud/src/cname.sh
+
+[Install]
+WantedBy=default.target

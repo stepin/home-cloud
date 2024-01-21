@@ -1,0 +1,13 @@
+#!/bin/sh
+
+INSTALL_PACKAGES="$INSTALL_PACKAGES bash-completion mc tmux eza btop zsh policycoreutils-python-utils"
+ENABLE_SERVICES="$ENABLE_SERVICES sshd"
+
+mkdir -pm700 /root/.ssh/
+
+cat files/authorized_keys >> /root/.ssh/authorized_keys
+chmod 644 /root/.ssh/authorized_keys
+
+echo "alias l=eza" >> /root/.zshrc
+
+chsh -s /usr/bin/zsh

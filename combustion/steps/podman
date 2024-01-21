@@ -1,0 +1,9 @@
+#!/bin/sh
+
+ENABLE_SERVICES="$ENABLE_SERVICES podman.socket podman-restart.service"
+
+# Configure podman
+touch /etc/containers/nodocker
+cat >/etc/containers/registries.conf.d/docker.conf <<EOF
+unqualified-search-registries = ['docker.io']
+EOF

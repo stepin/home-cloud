@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Cloud</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script src="jquery-3.7.1.min.js"></script>
+    <script>
+        function loadData(renderFunc) {
+            $.getJSON("servers.json", function(servers) {
+                servers=$.map(servers, function(serverUrl, index) {
+                    jqXHR=$.ajax({
+                        dataType: "json",
+                        url: serverUrl,
+                        async: false
+                    });
+                    if (jqXHR.responseText) {
+                        server=jQuery.parseJSON(jqXHR.responseText);
+                        server.system["url"] = new URL(serverUrl).origin;
+                        return server;
+                    } else {
+                        return jqXHR.responseText;
+                    }
+                });
+                renderFunc(servers);
+            });
+        }
+
+        function appUrl(app) {
+            if (app.lbExternal) {
+                return "https://" + app.lbExternal;
+            } else if (app.lbInternal) {
+                return "https://" + app.lbInternal;
+            } else if (app.avahiAlias) {
+                return "http://" + app.avahiAlias + ":" + app.publicPort;
+            } else {
+                "#"
+            }
+        }
+
+        function render(servers){
+            servers.sort(function(a, b){
+                return a.system.sortOrder-b.system.sortOrder
+            });
+
+            html = ""
+            jQuery.each(servers, function(index, server){
+                html += "<h3 title=\"server\">"+server.system.name+"</h3>"
+                html += "<ul>"
+                jQuery.each(server.apps, function(index2, app){
+                    html += '<li><a href="'+appUrl(app)+'">' + app.name + '</a>'
+                });
+                html += '<li>--'
+                html += '<li><a href="'+server.system.url+'">LB</a>'
+                html += '<li><a href="'+server.system.url+':9090">Cockpit</a>'
+                html += "</ul>"
+            });
+
+            $("#app").html( html );
+        }
+
+        $(document).ready(function() {
+            loadData(render);
+        });
+    </script>
+</body>
+</html>

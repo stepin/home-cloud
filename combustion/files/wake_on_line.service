@@ -1,0 +1,9 @@
+[Unit]
+Description=Configure wake on LAN for primary network card
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash -c 'nmcli c modify "$(nmcli --fields=name --terse connection show --active | egrep -v ^lo$ | head -1)" 802-3-ethernet.wake-on-lan magic'
+
+[Install]
+WantedBy=default.target

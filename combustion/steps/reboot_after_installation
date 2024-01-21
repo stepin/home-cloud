@@ -1,0 +1,8 @@
+#!/bin/sh
+
+ENABLE_SERVICES="$ENABLE_SERVICES firstboot_reboot.service"
+
+cp files/firstboot_reboot.service /etc/systemd/system/
+
+# combustion can be on fat filesystem without proper file permissions
+chmod 644 /etc/systemd/system/firstboot_reboot.service
